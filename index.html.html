@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análisis Electoral Antioquia 2010–2022</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; background: #f4f5f7; color: #1a1a1a; padding: 24px; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { font-size: 14px; color: #555; margin-bottom: 28px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
+  .tab { padding: 7px 16px; border-radius: 8px; border: 1px solid #ccc; font-size: 13px; cursor: pointer; background: #fff; color: #444; }
+  .tab.active { background: #1a56db; color: #fff; border-color: #1a56db; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .metric { background: #fff; border-radius: 10px; padding: 14px 16px; border: 1px solid #e0e0e0; }
+  .metric-label { font-size: 12px; color: #666; margin-bottom: 4px; }
+  .metric-value { font-size: 24px; font-weight: 600; color: #111; }
+  .metric-sub { font-size: 11px; color: #999; margin-top: 2px; }
+  .chart-card { background: #fff; border-radius: 12px; border: 1px solid #e0e0e0; padding: 20px 20px 12px; margin-bottom: 24px; }
+  .chart-title { font-size: 14px; font-weight: 600; color: #222; margin-bottom: 14px; }
+  .chart-wrap { position: relative; width: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; font-size: 12px; color: #555; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .insight { background: #f0f4ff; border-left: 4px solid #1a56db; border-radius: 0 8px 8px 0; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #333; line-height: 1.7; }
+  .insight strong { color: #111; }
+  .export-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 28px; padding: 14px 16px; background: #fff; border-radius: 10px; border: 1px solid #e0e0e0; align-items: center; }
+  .export-bar span { font-size: 13px; color: #555; margin-right: 4px; }
+  .btn { padding: 7px 16px; border-radius: 7px; border: 1px solid #bbb; background: #fff; font-size: 13px; cursor: pointer; color: #333; }
+  .btn:hover { background: #f0f0f0; }
+  .btn-primary { background: #1a56db; color: #fff; border-color: #1a56db; }
+  .btn-primary:hover { background: #1447b5; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 12px; color: #666; font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #e0e0e0; background: #fafafa; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; color: #222; }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 6px; }
+  .badge-up { background: #e6f4ea; color: #1e6e36; }
+  .badge-warn { background: #fff3cd; color: #856404; }
+  .badge-down { background: #fdecea; color: #c62828; }
+  .bar-cell { display: flex; align-items: center; gap: 8px; }
+  .bar-bg { flex: 1; background: #f0f0f0; height: 8px; border-radius: 4px; overflow: hidden; min-width: 60px; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  .insight-card { background: #fff; border-radius: 10px; padding: 14px 16px; border: 1px solid #e0e0e0; }
+  .insight-card .ic-label { font-size: 11px; color: #888; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .insight-card p { font-size: 13px; color: #333; line-height: 1.6; }
+  @media print { .export-bar { display: none; } .tabs { display: none; } .section { display: block !important; } body { background: #fff; } }
+  @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Análisis Electoral — Antioquia 2010–2022</h1>
+<p class="subtitle">Segunda vuelta presidencial · 9 subregiones · 125 municipios</p>
+
+<div class="export-bar">
+  <span>Exportar:</span>
+  <button class="btn btn-primary" onclick="window.print()">Imprimir / Guardar PDF</button>
+  <button class="btn" onclick="exportChart('chartVotos','votos_subregion')">Votos PNG</button>
+  <button class="btn" onclick="exportChart('chartLineas','series_tiempo')">Serie tiempo PNG</button>
+  <button class="btn" onclick="exportChart('chartAbstencion','abstencion')">Abstención PNG</button>
+  <button class="btn" onclick="exportChart('chartPartic','participacion')">Participación PNG</button>
+  <button class="btn" onclick="exportChart('chartEspeciales','votos_especiales')">Especiales PNG</button>
+  <button class="btn" onclick="exportChart('chartResumen','resumen')">Resumen PNG</button>
+  <button class="btn" onclick="exportAllCharts()">Todos los PNG</button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('votos',this)">Votos por subregión</button>
+  <button class="tab" onclick="showTab('abstencion',this)">Abstención</button>
+  <button class="tab" onclick="showTab('participacion',this)">Participación</button>
+  <button class="tab" onclick="showTab('especiales',this)">Votos especiales</button>
+  <button class="tab" onclick="showTab('resumen',this)">Resumen ejecutivo</button>
+</div>
+
+<!-- TAB VOTOS -->
+<div id="tab-votos" class="section active">
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">Total votos 2010</div><div class="metric-value">1.76M</div><div class="metric-sub">base de referencia</div></div>
+    <div class="metric"><div class="metric-label">Total votos 2022</div><div class="metric-value">2.90M</div><div class="metric-sub">+65% en 12 años</div></div>
+    <div class="metric"><div class="metric-label">Mayor crecimiento</div><div class="metric-value">+73%</div><div class="metric-sub">Nordeste</div></div>
+    <div class="metric"><div class="metric-label">Menor crecimiento</div><div class="metric-value">+35%</div><div class="metric-sub">Suroeste</div></div>
+  </div>
+  <div class="insight"><strong>Efecto posacuerdo de paz (post-2016):</strong> el salto más visible en participación se dio entre 2014 y 2018. Subregiones históricamente afectadas por conflicto como Nordeste (+73%), Bajo Cauca (+56.7%) y Urabá (+68.5%) muestran crecimientos superiores al promedio, consistentes con la reducción de violencia electoral tras la desmovilización de las FARC-EP. Sin embargo, la persistencia del ELN y grupos disidentes hace que el Bajo Cauca muestre caída en 2018 (30.8%), sugiriendo posible coerción residual.</div>
+
+  <div class="chart-card">
+    <div class="chart-title">Votos totales por subregión (2010–2022)</div>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#3266ad"></span>2010</span>
+      <span><span class="legend-dot" style="background:#5c9dd6"></span>2014</span>
+      <span><span class="legend-dot" style="background:#f0a500"></span>2018</span>
+      <span><span class="legend-dot" style="background:#d85a30"></span>2022</span>
+    </div>
+    <div class="chart-wrap" style="height:360px"><canvas id="chartVotos"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Serie de tiempo: evolución de votos por subregión (excl. Valle de Aburrá)</div>
+    <div class="chart-wrap" style="height:300px"><canvas id="chartLineas"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Crecimiento de votos 2010–2022 por subregión</div>
+    <table>
+      <tr><th>Subregión</th><th>2010</th><th>2022</th><th>Crecimiento</th><th>Contexto conflicto</th></tr>
+      <tr><td>Nordeste</td><td>36,070</td><td>62,403</td><td><span class="badge badge-up">+73.0%</span></td><td><span class="badge badge-warn">ELN activo</span></td></tr>
+      <tr><td>Oriente</td><td>205,086</td><td>352,892</td><td><span class="badge badge-up">+72.1%</span></td><td><span class="badge badge-up">Bajo conflicto</span></td></tr>
+      <tr><td>Magdalena Medio</td><td>26,846</td><td>45,630</td><td><span class="badge badge-up">+70.0%</span></td><td><span class="badge badge-warn">Paramilitarismo</span></td></tr>
+      <tr><td>Valle de Aburrá</td><td>1,096,137</td><td>1,835,672</td><td><span class="badge badge-up">+67.5%</span></td><td><span class="badge badge-up">Urbano</span></td></tr>
+      <tr><td>Urabá</td><td>117,753</td><td>198,378</td><td><span class="badge badge-up">+68.5%</span></td><td><span class="badge badge-warn">Grupos armados</span></td></tr>
+      <tr><td>Norte</td><td>60,085</td><td>93,395</td><td><span class="badge badge-up">+55.4%</span></td><td><span class="badge badge-warn">ELN/disidencias</span></td></tr>
+      <tr><td>Bajo Cauca</td><td>48,072</td><td>75,308</td><td><span class="badge badge-up">+56.7%</span></td><td><span class="badge badge-down">Alto conflicto</span></td></tr>
+      <tr><td>Occidente</td><td>56,379</td><td>86,183</td><td><span class="badge badge-up">+52.9%</span></td><td><span class="badge badge-up">Bajo conflicto</span></td></tr>
+      <tr><td>Suroeste</td><td>112,279</td><td>151,155</td><td><span class="badge badge-up">+34.6%</span></td><td><span class="badge badge-up">Bajo conflicto</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- TAB ABSTENCIÓN -->
+<div id="tab-abstencion" class="section">
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">Mayor abstención 2022</div><div class="metric-value">71.9%</div><div class="metric-sub">Retiro (Oriente)</div></div>
+    <div class="metric"><div class="metric-label">Menor abstención 2022</div><div class="metric-value">28.1%</div><div class="metric-sub">Tarazá (Bajo Cauca)</div></div>
+    <div class="metric"><div class="metric-label">Promedio Antioquia 2022</div><div class="metric-value">47.5%</div><div class="metric-sub">abstención municipal</div></div>
+    <div class="metric"><div class="metric-label">Mayor caída abstención</div><div class="metric-value">−24.5pp</div><div class="metric-sub">Briceño 2010→2022</div></div>
+  </div>
+  <div class="insight"><strong>Paradoja del conflicto:</strong> los municipios del Bajo Cauca (Tarazá, Zaragoza, Nechí, Cáceres) presentan las menores tasas de abstención del departamento. Esto puede reflejar mecanismos de coerción electoral — presencia de grupos armados que presionan la participación. En contraste, municipios del Oriente con alta abstención (Retiro, La Ceja, Rionegro) son económicamente prósperos, indicando apatía política voluntaria.</div>
+
+  <div class="chart-card">
+    <div class="chart-title">Abstención promedio por subregión (2010–2022)</div>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#3266ad"></span>2010</span>
+      <span><span class="legend-dot" style="background:#5c9dd6"></span>2014</span>
+      <span><span class="legend-dot" style="background:#f0a500"></span>2018</span>
+      <span><span class="legend-dot" style="background:#d85a30"></span>2022</span>
+    </div>
+    <div class="chart-wrap" style="height:340px"><canvas id="chartAbstencion"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Top 8 municipios con mayor abstención 2022</div>
+    <table>
+      <tr><th>Municipio</th><th>Subregión</th><th>Abstención 2022</th><th>Tendencia</th></tr>
+      <tr><td>Retiro</td><td>Oriente</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:72%;background:#d85a30"></div></div>72.1%</div></td><td><span class="badge badge-up">↑ creciendo</span></td></tr>
+      <tr><td>La Ceja</td><td>Oriente</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:71%;background:#d85a30"></div></div>71.3%</div></td><td><span class="badge badge-up">↑ creciendo</span></td></tr>
+      <tr><td>Rionegro</td><td>Oriente</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:70%;background:#d85a30"></div></div>70.4%</div></td><td><span class="badge badge-up">↑ creciendo</span></td></tr>
+      <tr><td>El Carmen de Viboral</td><td>Oriente</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:70%;background:#d85a30"></div></div>69.8%</div></td><td><span class="badge badge-up">↑ creciendo</span></td></tr>
+      <tr><td>La Unión</td><td>Oriente</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:69%;background:#d85a30"></div></div>68.9%</div></td><td><span class="badge badge-up">↑ creciendo</span></td></tr>
+      <tr><td>Sabaneta</td><td>Valle de Aburrá</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:68%;background:#ea6350"></div></div>67.7%</div></td><td><span class="badge badge-up">↑ creciendo</span></td></tr>
+      <tr><td>Guarne</td><td>Oriente</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:68%;background:#d85a30"></div></div>68.2%</div></td><td><span class="badge badge-up">↑ creciendo</span></td></tr>
+      <tr><td>Guatapé</td><td>Oriente</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:68%;background:#d85a30"></div></div>68.1%</div></td><td><span class="badge badge-up">↑ creciendo</span></td></tr>
+    </table>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Top 8 municipios con menor abstención 2022 (posible anomalía)</div>
+    <table>
+      <tr><th>Municipio</th><th>Subregión</th><th>Abstención 2022</th><th>Alerta</th></tr>
+      <tr><td>Tarazá</td><td>Bajo Cauca</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:28%;background:#3266ad"></div></div>28.1%</div></td><td><span class="badge badge-warn">Presencia armada</span></td></tr>
+      <tr><td>Ituango</td><td>Norte</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:28%;background:#3266ad"></div></div>28.2%</div></td><td><span class="badge badge-warn">ELN / disidencias</span></td></tr>
+      <tr><td>Anorí</td><td>Nordeste</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:32%;background:#5c9dd6"></div></div>31.8%</div></td><td><span class="badge badge-warn">ELN activo</span></td></tr>
+      <tr><td>Zaragoza</td><td>Bajo Cauca</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:32%;background:#3266ad"></div></div>31.9%</div></td><td><span class="badge badge-warn">Presencia armada</span></td></tr>
+      <tr><td>Valdivia</td><td>Norte</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:33%;background:#5c9dd6"></div></div>33.4%</div></td><td><span class="badge badge-warn">Corredor ELN</span></td></tr>
+      <tr><td>Nechí</td><td>Bajo Cauca</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:35%;background:#5c9dd6"></div></div>34.6%</div></td><td><span class="badge badge-warn">Presencia armada</span></td></tr>
+      <tr><td>Cáceres</td><td>Bajo Cauca</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:35%;background:#5c9dd6"></div></div>35.0%</div></td><td><span class="badge badge-warn">Presencia armada</span></td></tr>
+      <tr><td>El Bagre</td><td>Bajo Cauca</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:35%;background:#5c9dd6"></div></div>35.3%</div></td><td><span class="badge badge-warn">Presencia armada</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- TAB PARTICIPACIÓN -->
+<div id="tab-participacion" class="section">
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">Promedio Antioquia 2010</div><div class="metric-value">38.2%</div><div class="metric-sub">participación</div></div>
+    <div class="metric"><div class="metric-label">Promedio Antioquia 2022</div><div class="metric-value">52.5%</div><div class="metric-sub">participación</div></div>
+    <div class="metric"><div class="metric-label">Mayor salto 2010→2022</div><div class="metric-value">+24.5pp</div><div class="metric-sub">Briceño (Norte)</div></div>
+    <div class="metric"><div class="metric-label">Subregión más dinámica</div><div class="metric-value">Norte</div><div class="metric-sub">mayor alza post-paz</div></div>
+  </div>
+  <div class="insight"><strong>Efecto territorial del Acuerdo de Paz:</strong> Briceño pasó de 16.7% de participación en 2010 a 41.2% en 2022 (+24.5pp), el mayor incremento del departamento. Esta zona fue uno de los epicentros del proceso de dejación de armas de las FARC-EP. La reducción de amenazas directas contra votantes explica gran parte del aumento observado en el Norte antioqueño.</div>
+
+  <div class="chart-card">
+    <div class="chart-title">Tasa de participación promedio por subregión (2010–2022)</div>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#3266ad"></span>2010</span>
+      <span><span class="legend-dot" style="background:#5c9dd6"></span>2014</span>
+      <span><span class="legend-dot" style="background:#f0a500"></span>2018</span>
+      <span><span class="legend-dot" style="background:#639922"></span>2022</span>
+    </div>
+    <div class="chart-wrap" style="height:340px"><canvas id="chartPartic"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Municipios con mayor salto en participación (2010→2022)</div>
+    <table>
+      <tr><th>Municipio</th><th>Subregión</th><th>2010</th><th>2022</th><th>Δ pp</th><th>Contexto</th></tr>
+      <tr><td>Briceño</td><td>Norte</td><td>16.7%</td><td>41.2%</td><td><span class="badge badge-up">+24.5pp</span></td><td>Epicentro desmovilización FARC</td></tr>
+      <tr><td>Guadalupe</td><td>Norte</td><td>20.6%</td><td>44.5%</td><td><span class="badge badge-up">+23.9pp</span></td><td>Zona liberada de conflicto</td></tr>
+      <tr><td>Murindó</td><td>Urabá</td><td>22.7%</td><td>46.6%</td><td><span class="badge badge-up">+23.9pp</span></td><td>Zona histórica guerrilla</td></tr>
+      <tr><td>Toledo</td><td>Norte</td><td>20.3%</td><td>40.5%</td><td><span class="badge badge-up">+20.2pp</span></td><td>Reducción violencia ELN</td></tr>
+      <tr><td>Yondó</td><td>Magdalena Medio</td><td>40.1%</td><td>61.2%</td><td><span class="badge badge-up">+21.1pp</span></td><td>Corredor estratégico</td></tr>
+      <tr><td>Puerto Nare</td><td>Magdalena Medio</td><td>33.0%</td><td>52.9%</td><td><span class="badge badge-up">+19.9pp</span></td><td>Mejora en seguridad</td></tr>
+      <tr><td>Anorí</td><td>Nordeste</td><td>13.6%</td><td>31.8%</td><td><span class="badge badge-up">+18.1pp</span></td><td>ELN aún activo — crecimiento parcial</td></tr>
+      <tr><td>Dabeiba</td><td>Occidente</td><td>24.3%</td><td>42.2%</td><td><span class="badge badge-up">+17.9pp</span></td><td>Proceso de paz</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- TAB ESPECIALES -->
+<div id="tab-especiales" class="section">
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">Votos en blanco 2014</div><div class="metric-value">124,919</div><div class="metric-sub">pico histórico</div></div>
+    <div class="metric"><div class="metric-label">Votos nulos 2014</div><div class="metric-value">71,596</div><div class="metric-sub">pico histórico</div></div>
+    <div class="metric"><div class="metric-label">Tarjetas no marcadas 2022</div><div class="metric-value">3,646</div><div class="metric-sub">mínimo histórico</div></div>
+    <div class="metric"><div class="metric-label">Voto en blanco / total 2018</div><div class="metric-value">5.4%</div><div class="metric-sub">del total de votos</div></div>
+  </div>
+  <div class="insight"><strong>2014: el año del voto protesta.</strong> El pico de votos nulos y en blanco coincide con el proceso de paz en curso y la polarización Santos–Zuluaga. En 2022, con la candidatura histórica de Gustavo Petro, los votos en blanco bajan significativamente — muchos electores de voto-protesta se volcaron a candidatos definidos. Las tarjetas no marcadas muestran tendencia decreciente sistemática, señal de mejora logística.</div>
+
+  <div class="chart-card">
+    <div class="chart-title">Evolución de votos especiales en Antioquia (2010–2022)</div>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#3266ad"></span>Votos en blanco</span>
+      <span><span class="legend-dot" style="background:#d85a30"></span>Votos nulos</span>
+      <span><span class="legend-dot" style="background:#888780"></span>Tarjetas no marcadas</span>
+    </div>
+    <div class="chart-wrap" style="height:280px"><canvas id="chartEspeciales"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Votos en blanco por subregión: 2010 vs 2022</div>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#3266ad"></span>2010</span>
+      <span><span class="legend-dot" style="background:#639922"></span>2022</span>
+    </div>
+    <div class="chart-wrap" style="height:300px"><canvas id="chartBlancoSub"></canvas></div>
+  </div>
+</div>
+
+<!-- TAB RESUMEN -->
+<div id="tab-resumen" class="section">
+  <div class="chart-card">
+    <div class="chart-title">Tendencia general: participación vs abstención promedio (Antioquia)</div>
+    <div class="chart-wrap" style="height:280px"><canvas id="chartResumen"></canvas></div>
+  </div>
+
+  <div class="grid2">
+    <div class="insight-card" style="border-left:4px solid #639922">
+      <div class="ic-label">Hallazgo 1 — Acuerdo de paz y participación</div>
+      <p>Briceño (+24.5pp), Guadalupe (+23.9pp) y Dabeiba (+17.9pp) muestran crecimiento consistente con el impacto territorial del Acuerdo de 2016. El período 2014–2018 concentra el mayor salto departamental.</p>
+    </div>
+    <div class="insight-card" style="border-left:4px solid #d85a30">
+      <div class="ic-label">Hallazgo 2 — Anomalía en Bajo Cauca</div>
+      <p>Tarazá, Zaragoza, Nechí y Cáceres combinan alta presencia armada con abstención inusualmente baja. Patrón consistente con coerción electoral o movilización clientelar bajo presión.</p>
+    </div>
+    <div class="insight-card" style="border-left:4px solid #f0a500">
+      <div class="ic-label">Hallazgo 3 — Pico de voto protesta 2014</div>
+      <p>2014 fue el año de mayor descontento: 124,919 votos en blanco y 71,596 nulos. La polarización Santos–Zuluaga alrededor del proceso de paz canalizó el rechazo en urnas.</p>
+    </div>
+    <div class="insight-card" style="border-left:4px solid #5c9dd6">
+      <div class="ic-label">Hallazgo 4 — Paradoja del Oriente</div>
+      <p>Retiro, La Ceja y Rionegro — municipios prósperos — tienen la mayor abstención del departamento (+70%). Apunta a apatía política de clases medias-altas, no a obstáculos de acceso.</p>
+    </div>
+    <div class="insight-card" style="border-left:4px solid #7F77DD">
+      <div class="ic-label">Hallazgo 5 — Crecimiento sostenido</div>
+      <p>Los votos en Antioquia crecieron +65% entre 2010 y 2022. El Nordeste (+73%) y Oriente (+72%) lideran, superando el ritmo del crecimiento del censo electoral.</p>
+    </div>
+    <div class="insight-card" style="border-left:4px solid #888780">
+      <div class="ic-label">Hallazgo 6 — Calidad de datos</div>
+      <p>Datos con buena calidad estructural. Columnas Unnamed: 24–27 son 100% nulas y deben eliminarse. La variable "Abstención" en la hoja de tasas contiene participación — requiere renombrar.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+function exportChart(canvasId, name) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) { alert('Gráfico no encontrado: ' + canvasId); return; }
+  const link = document.createElement('a');
+  link.download = 'electoral_' + name + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function exportAllCharts() {
+  const charts = [
+    ['chartVotos','votos_subregion'],
+    ['chartLineas','serie_tiempo'],
+    ['chartAbstencion','abstencion'],
+    ['chartPartic','participacion'],
+    ['chartEspeciales','votos_especiales'],
+    ['chartBlancoSub','votos_blanco_subregion'],
+    ['chartResumen','resumen_tendencia']
+  ];
+  charts.forEach(([id, name], i) => {
+    setTimeout(() => {
+      const canvas = document.getElementById(id);
+      if (canvas) {
+        const link = document.createElement('a');
+        link.download = 'electoral_' + name + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
+    }, i * 400);
+  });
+}
+
+const subregions = ['Bajo Cauca','Mag. Medio','Nordeste','Norte','Occidente','Oriente','Suroeste','Urabá','Valle Aburrá'];
+const gridColor = 'rgba(0,0,0,0.07)';
+const labelColor = '#555';
+
+const baseOpts = (tickCb) => ({
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { ticks: { color: labelColor, font: { size: 11 } }, grid: { color: gridColor } },
+    y: { ticks: { color: labelColor, font: { size: 11 }, callback: tickCb || (v=>v) }, grid: { color: gridColor } }
+  }
+});
+
+new Chart(document.getElementById('chartVotos'), {
+  type: 'bar',
+  data: { labels: subregions, datasets: [
+    { label: '2010', data: [48072,26846,36070,60085,56379,205086,112279,117753,1096137], backgroundColor: '#3266ad' },
+    { label: '2014', data: [62867,32922,41655,71930,72633,243038,125111,159760,1238127], backgroundColor: '#5c9dd6' },
+    { label: '2018', data: [64083,39685,52887,86549,81049,313485,143202,167625,1641971], backgroundColor: '#f0a500' },
+    { label: '2022', data: [75308,45630,62403,93395,86183,352892,151155,198378,1835672], backgroundColor: '#d85a30' }
+  ]},
+  options: { ...baseOpts(v => v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?Math.round(v/1000)+'k':v), plugins: { legend: { display: true, labels: { font:{size:12}, color: labelColor, boxWidth: 12 } } } }
+});
+
+new Chart(document.getElementById('chartLineas'), {
+  type: 'line',
+  data: { labels: [2010,2014,2018,2022], datasets: [
+    { label: 'Bajo Cauca', data: [48072,62867,64083,75308], borderColor: '#d85a30', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4 },
+    { label: 'Nordeste', data: [36070,41655,52887,62403], borderColor: '#3266ad', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4 },
+    { label: 'Norte', data: [60085,71930,86549,93395], borderColor: '#f0a500', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4 },
+    { label: 'Urabá', data: [117753,159760,167625,198378], borderColor: '#639922', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4 },
+    { label: 'Mag. Medio', data: [26846,32922,39685,45630], borderColor: '#7F77DD', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4 },
+    { label: 'Occidente', data: [56379,72633,81049,86183], borderColor: '#888780', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4 },
+    { label: 'Suroeste', data: [112279,125111,143202,151155], borderColor: '#ea6350', backgroundColor: 'transparent', tension: 0.3, pointRadius: 4 }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, labels: { font:{size:11}, color: labelColor, boxWidth: 12 } } },
+    scales: { x: { ticks: { color: labelColor }, grid: { color: gridColor } }, y: { ticks: { color: labelColor, callback: v => Math.round(v/1000)+'k' }, grid: { color: gridColor } } }
+  }
+});
+
+const absData = {
+  '2010': [28.3,37.2,30.3,33.1,37.9,48.3,40.8,35.1,47.5],
+  '2014': [34.9,42.5,33.6,38.8,45.7,51.9,44.3,44.4,49.0],
+  '2018': [30.8,47.1,39.2,42.9,48.3,58.8,47.8,42.1,56.8],
+  '2022': [35.3,51.4,41.9,45.1,48.3,59.6,49.0,45.7,58.7]
+};
+new Chart(document.getElementById('chartAbstencion'), {
+  type: 'bar',
+  data: { labels: subregions, datasets: [
+    { label: '2010', data: absData['2010'].map(v=>+(100-v).toFixed(1)), backgroundColor: '#3266ad' },
+    { label: '2014', data: absData['2014'].map(v=>+(100-v).toFixed(1)), backgroundColor: '#5c9dd6' },
+    { label: '2018', data: absData['2018'].map(v=>+(100-v).toFixed(1)), backgroundColor: '#f0a500' },
+    { label: '2022', data: absData['2022'].map(v=>+(100-v).toFixed(1)), backgroundColor: '#d85a30' }
+  ]},
+  options: { ...baseOpts(v=>v+'%'), plugins: { legend: { display: true, labels: { font:{size:12}, color: labelColor, boxWidth: 12 } } }, scales: { x: { ticks: { color: labelColor, font:{size:10} }, grid: { color: gridColor } }, y: { min: 30, max: 90, ticks: { color: labelColor, callback: v=>v+'%' }, grid: { color: gridColor } } } }
+});
+
+new Chart(document.getElementById('chartPartic'), {
+  type: 'bar',
+  data: { labels: subregions, datasets: [
+    { label: '2010', data: absData['2010'], backgroundColor: '#3266ad' },
+    { label: '2014', data: absData['2014'], backgroundColor: '#5c9dd6' },
+    { label: '2018', data: absData['2018'], backgroundColor: '#f0a500' },
+    { label: '2022', data: absData['2022'], backgroundColor: '#639922' }
+  ]},
+  options: { ...baseOpts(v=>v+'%'), plugins: { legend: { display: true, labels: { font:{size:12}, color: labelColor, boxWidth: 12 } } }, scales: { x: { ticks: { color: labelColor, font:{size:10} }, grid: { color: gridColor } }, y: { min: 0, max: 75, ticks: { color: labelColor, callback: v=>v+'%' }, grid: { color: gridColor } } } }
+});
+
+new Chart(document.getElementById('chartEspeciales'), {
+  type: 'bar',
+  data: { labels: [2010,2014,2018,2022], datasets: [
+    { label: 'Votos en blanco', data: [75572,124919,139613,85523], backgroundColor: '#3266ad' },
+    { label: 'Votos nulos', data: [33718,71596,38417,41723], backgroundColor: '#d85a30' },
+    { label: 'Tarjetas no marcadas', data: [5944,7936,4825,3646], backgroundColor: '#888780' }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, labels: { font:{size:12}, color: labelColor, boxWidth: 12 } } },
+    scales: { x: { ticks: { color: labelColor }, grid: { color: gridColor } }, y: { ticks: { color: labelColor, callback: v => Math.round(v/1000)+'k' }, grid: { color: gridColor } } }
+  }
+});
+
+new Chart(document.getElementById('chartBlancoSub'), {
+  type: 'bar',
+  data: { labels: subregions, datasets: [
+    { label: '2010', data: [1401,784,1338,2965,2009,7068,3366,3732,52909], backgroundColor: '#3266ad' },
+    { label: '2022', data: [1760,756,1778,3090,1918,8347,3343,4586,59945], backgroundColor: '#639922' }
+  ]},
+  options: { ...baseOpts(v=>v>=1000?Math.round(v/1000)+'k':v), plugins: { legend: { display: true, labels: { font:{size:12}, color: labelColor, boxWidth: 12 } } } }
+});
+
+new Chart(document.getElementById('chartResumen'), {
+  type: 'line',
+  data: { labels: [2010,2014,2018,2022], datasets: [
+    { label: 'Participación promedio', data: [38.2,43.8,46.6,52.5], borderColor: '#639922', backgroundColor: 'rgba(99,153,34,0.1)', fill: true, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#639922' },
+    { label: 'Abstención promedio', data: [61.8,56.2,53.4,47.5], borderColor: '#d85a30', backgroundColor: 'rgba(216,90,48,0.1)', fill: true, tension: 0.3, pointRadius: 6, borderDash: [6,3], pointBackgroundColor: '#d85a30' }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, labels: { font:{size:13}, color: labelColor, boxWidth: 14 } } },
+    scales: { x: { ticks: { color: labelColor }, grid: { color: gridColor } }, y: { min: 30, max: 75, ticks: { color: labelColor, callback: v=>v+'%' }, grid: { color: gridColor } } }
+  }
+});
+</script>
+</body>
+</html>
